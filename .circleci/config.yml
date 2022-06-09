@@ -193,7 +193,7 @@ jobs:
       - run:
           name: Send migration status to kvdb.io
           command: |
-            cat ./backend/migrations_dump.txt
+            cat ./backend/migration_dump.txt
             if grep -q "has been executed successfully." ./backend/migrations_dump.txt
               then
               # If you are using memstash.io, generate the token "7933fe63-4687-4fa1-8426-aa25aa1730ec" on the website
@@ -239,19 +239,19 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
-      - build-backend
-      - test-frontend:
-          requires: [build-frontend]
-      - test-backend:
-          requires: [build-backend]      
-      - scan-backend:
-          requires: [build-backend]
-      - scan-frontend:
-          requires: [build-frontend]    
-      - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]          
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]          
+      # - build-frontend
+      # - build-backend
+      # - test-frontend:
+      #     requires: [build-frontend]
+      # - test-backend:
+      #     requires: [build-backend]      
+      # - scan-backend:
+      #     requires: [build-backend]
+      # - scan-frontend:
+      #     requires: [build-frontend]    
+      # - deploy-infrastructure:
+      #     requires: [test-frontend, test-backend, scan-frontend, scan-backend]          
+      # - configure-infrastructure:
+      #     requires: [deploy-infrastructure]          
       - run-migrations:
-          requires: [configure-infrastructure]          
+          # requires: [configure-infrastructure]          
