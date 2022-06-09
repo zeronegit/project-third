@@ -7,7 +7,7 @@
 - name: extract and run mp2
   shell: |
     cd /home/ubuntu
-    tar -xzvf artifact.tar.gz -C
+    tar -xzvf artifact.tar.gz -C .
     npm i
     npm run build
     pm2 stop default
