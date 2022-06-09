@@ -226,13 +226,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: yum -y i tar gzip
+          name: yum -y i tar gzip curl
           command: |
-            yum -y install tar gzip
+            yum -y install tar gzip curl
       - run:
           name: Install dependencies
           command: |
-            yum -y install npm
+            curl -sL https://rpm.nodesource.com/setup_10.x | bash -
+            yum install -y nodejs
       - run:
           name: Get backend url
           command: |
@@ -268,7 +269,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible 
+            apk add --update ansible nodejs npm
             pip install awscli
       - run:
           name: Deploy backend
