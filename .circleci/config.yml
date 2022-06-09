@@ -161,13 +161,16 @@ jobs:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/
       - add_ssh_keys:
           fingerprints:
             - "98:20:2c:cd:40:e9:c0:2f:aa:1f:99:ed:08:69:d2:a4"
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible aws-cli
+            apk add --update ansible 
+            pip install awscli
       - run:
           name: Configure server
           command: |
@@ -202,6 +205,36 @@ jobs:
               curl https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             fi   
       - destroy-environment
+
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: yum -y i tar gzip
+          command: |
+            yum -y install tar gzip
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install npm
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP=$(aws ec2 describe-instances \
+              --filters Name=tag:project,Values="uda-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --query Reservation[*].Instances[*].PublicDnsName \
+              --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL = ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      # - run:
+      #     name: Deploy frontend objects
+      #     command: |
+      #       # your code here
+      # Here's where you will add some code to rollback on failure   
 
 workflows:
   default:
