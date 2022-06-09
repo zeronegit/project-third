@@ -10,7 +10,24 @@ commands:
           command: |
             aws cloudformation delete-stack --stack-name "uda-backend-${CIRCLE_WORKFLOW_ID:0:7}"
             aws cloudformation delete-stack --stack-name "uda-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
- 
+
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.     
+    steps:
+      - run:
+          name: Revert migrations
+          # Add when this will run
+          command: |
+            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
+            SUCCESS=$(curl https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            if(( $SUCCESS==1 )); 
+            then
+              cd ~/project/backend
+              npm install
+              #  Add revert code here. You can find this in the Getting Started section.
+              npm run migrations:revert
+            fi
+
 jobs:
   build-frontend:
     docker:
@@ -154,7 +171,7 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt        
       # Here's where you will add some code to rollback on failure 
-      # - destroy-environment 
+      - destroy-environment 
 
   configure-infrastructure:
     docker:
@@ -177,7 +194,7 @@ jobs:
             cd .circleci/ansible
             cat inventory.txt
             ansible-playbook -i inventory.txt configure-server.yml
-      # - destroy-environment      
+      - destroy-environment      
 
   run-migrations:
     docker:
@@ -200,7 +217,8 @@ jobs:
               # curl -H "Content-Type: text/plain" -H "token: 7933fe63-4687-4fa1-8426-aa25aa1730ec" --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
               # If you are using kvdb.io, generate the bucket ID "9GE4jRtKznmVKRfvdBABBe" in your local terminal first
               curl -k -O https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
-            fi   
+            fi
+      - revert-migrations         
 
   deploy-frontend:
     docker:
@@ -219,8 +237,8 @@ jobs:
           name: Get backend url
           command: |
             export BACKEND_IP=$(aws ec2 describe-instances \
-              --filters Name=tag:project,Values="uda-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --query Reservation[*].Instances[*].PublicDnsName \
+              --filters Name=tag:Name,Values="backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --query Reservations[*].Instances[*].PublicDnsName \
               --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "API_URL = ${API_URL}"
@@ -234,24 +252,59 @@ jobs:
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      # - destroy-environment
+      - destroy-environment
+      - revert-migrations
+      
+  deploy-backend:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - add_ssh_keys:
+          fingerprints:
+            - "98:20:2c:cd:40:e9:c0:2f:aa:1f:99:ed:08:69:d2:a4"
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible 
+            pip install awscli
+      - run:
+          name: Deploy backend
+          command: |
+            cd backend
+            npm i 
+            npm run build
+            cd ..
+            tar -C backend -czvf artifact.tar.gz .
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
+      - destroy-environment
+      - revert-migrations  
 
 workflows:
   default:
     jobs:
-      # - build-frontend
-      # - build-backend
-      # - test-frontend:
-      #     requires: [build-frontend]
-      # - test-backend:
-      #     requires: [build-backend]      
-      # - scan-backend:
-      #     requires: [build-backend]
-      # - scan-frontend:
-      #     requires: [build-frontend]    
-      # - deploy-infrastructure:
-      #     requires: [test-frontend, test-backend, scan-frontend, scan-backend]          
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]          
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]      
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]    
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]          
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]          
       - run-migrations
-          # requires: [configure-infrastructure]          
+          requires: [configure-infrastructure]  
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]                  
