@@ -1,0 +1,17 @@
+- name: upgrade apt
+  become: true
+  apt:
+    upgrade: yes
+
+- name: install npm, nodejs
+  become: true
+  apt:
+    name: ["npm", "nodejs"]
+    state: latest
+
+- name: install pm2
+  become: true 
+  npm:
+    name: pm2
+    global: true 
+    state: present
