@@ -331,6 +331,31 @@ jobs:
       - destroy-environment
       - revert-migrations 
 
+  cloudfront-update:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: yum -y i tar gzip curl
+          command: |
+            yum -y install tar gzip curl
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sL https://rpm.nodesource.com/setup_10.x | bash -
+            yum install -y nodejs
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/cloudfront.yml \
+              --stack-name InitialStack \
+              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
+              --tags project=third-proj
+      - destroy-environment
+      - revert-migrations         
+
 workflows:
   default:
     jobs:
@@ -355,4 +380,6 @@ workflows:
       - deploy-backend:
           requires: [run-migrations]                  
       - smoke-test:
-          requires: [deploy-backend, deploy-frontend]          
+          requires: [deploy-backend, deploy-frontend]         
+      - cloudfront-update:
+          requires: [smoke-test]           
