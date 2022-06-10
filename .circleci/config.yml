@@ -364,8 +364,6 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - attach_workspace:
-          at: ~/
       - run:
           name: yum -y i tar gzip curl
           command: |
@@ -374,7 +372,9 @@ jobs:
           name: Install dependencies
           command: |
             curl -sL https://rpm.nodesource.com/setup_10.x | bash -
-            yum install -y nodejs
+            yum install -y nodejs            
+      - attach_workspace:
+          at: ~/
       - run:
           name: Get old stack workflow id
           command: |
