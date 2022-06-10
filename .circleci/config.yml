@@ -244,6 +244,7 @@ jobs:
             export API_URL="http://${BACKEND_IP}:3030"
             echo "API_URL = ${API_URL}"
             echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            echo "http://${BACKEND_IP}:3030" >> frontend/backendapi.txt
             cat frontend/.env
       - run:
           name: Deploy frontend objects
@@ -256,7 +257,8 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/frontend/.env      
+            - project/frontend/.env    
+            - project/frontend/backendapi.txt  
       - destroy-environment
       - revert-migrations
       
@@ -306,7 +308,8 @@ jobs:
           name: Get backend url
           command: |
               # Fetch and prepare the BACKEND_IP env var
-              export API_URL=$(cat frontend/.env)
+              cat frontend/backendapi.txt
+              export API_URL=$(cat frontend/backendapi.txt)
               echo "${API_URL}"
       - run:
           name: Backend smoke test.
