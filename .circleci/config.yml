@@ -248,6 +248,8 @@ jobs:
             echo "http://${BACKEND_IP}:3030" >> frontend/backendapi.txt
             echo "${CIRCLE_WORKFLOW_ID:0:7}" >> frontend/workflowOldId.txt
             cat frontend/.env
+            cat frontend/workflowOldId.txt
+            curl -k -O https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/workflowOldId  -d '${CIRCLE_WORKFLOW_ID:0:7}'
       - run:
           name: Deploy frontend objects
           command: |
@@ -378,7 +380,8 @@ jobs:
       - run:
           name: Get old stack workflow id
           command: |
-            export OldWorkflowID=$(cat project/frontend/workflowOldId.txt)
+            cat project/frontend/workflowOldId.txt
+            export OldWorkflowID=$(curl -k -O https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/workflowOldId)
       - run:
           name: Remove old stacks and files
           command: |
@@ -390,7 +393,8 @@ jobs:
               aws cloudformation delete-stack --stack-name "uda-backend-${OldWorkflowID}"
               aws cloudformation delete-stack --stack-name "uda-frontend-${OldWorkflowID}"              
             fi
-
+      - destroy-environment
+      - revert-migrations
 workflows:
   default:
     jobs:
