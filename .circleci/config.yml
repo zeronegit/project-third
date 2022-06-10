@@ -380,7 +380,7 @@ jobs:
       - run:
           name: Get old stack workflow id
           command: |
-            cat project/frontend/workflowOldId.txt
+            # cat project/frontend/workflowOldId.txt
             export OldWorkflowID=$(curl -k -O https://kvdb.io/M7hM4McA2oZuENdTeQ5wrq/workflowOldId)
       - run:
           name: Remove old stacks and files
