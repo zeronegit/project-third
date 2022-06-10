@@ -305,15 +305,11 @@ jobs:
             apk add --update nodejs npm curl
             pip install awscli          
       - run:
-          name: Get backend url
-          command: |
-              # Fetch and prepare the BACKEND_IP env var
-              cat frontend/backendapi.txt
-              export API_URL=$(cat frontend/backendapi.txt)
-              echo "${API_URL}"
-      - run:
           name: Backend smoke test.
           command: |
+            cat frontend/backendapi.txt
+            export API_URL=$(cat frontend/backendapi.txt)
+            echo "${API_URL}/api/status"
             if curl "${API_URL}/api/status" | grep "ok"
             then
               return 0
